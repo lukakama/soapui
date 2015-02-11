@@ -18,6 +18,7 @@ package com.eviware.soapui.impl.rest.support;
 
 import com.eviware.soapui.impl.rest.RestMethod;
 import com.eviware.soapui.impl.rest.RestRepresentation;
+import com.eviware.soapui.impl.rest.RestRequest;
 import com.eviware.soapui.impl.rest.RestRequestInterface;
 import com.eviware.soapui.impl.rest.RestResource;
 import com.eviware.soapui.impl.rest.RestService;
@@ -31,6 +32,7 @@ import com.eviware.soapui.support.Tools;
 import com.eviware.soapui.support.UISupport;
 import com.eviware.soapui.support.xml.XmlUtils;
 import com.eviware.soapui.tools.PropertyExpansionRemover;
+
 import net.java.dev.wadl.x2009.x02.ApplicationDocument;
 import net.java.dev.wadl.x2009.x02.ApplicationDocument.Application;
 import net.java.dev.wadl.x2009.x02.DocDocument.Doc;
@@ -43,6 +45,7 @@ import net.java.dev.wadl.x2009.x02.ResourceDocument.Resource;
 import net.java.dev.wadl.x2009.x02.ResourceTypeDocument;
 import net.java.dev.wadl.x2009.x02.ResourcesDocument.Resources;
 import net.java.dev.wadl.x2009.x02.ResponseDocument.Response;
+
 import org.apache.xmlbeans.XmlCursor;
 import org.apache.xmlbeans.XmlException;
 import org.apache.xmlbeans.XmlObject;
@@ -53,6 +56,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import javax.xml.namespace.QName;
+
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
@@ -312,7 +316,10 @@ public class WadlImporter {
             }
         }
 
-        restMethod.addNewRequest("Request 1");
+        RestRequest newRequest = restMethod.addNewRequest("Request 1");
+        if (newRequest.getMediaType().equals("application/x-www-form-urlencoded")) {
+      	  newRequest.setPostQueryString(true);
+        }
         return restMethod;
     }
 
@@ -354,6 +361,14 @@ public class WadlImporter {
         }
         restRepresentation.setId(representation.getId());
         restRepresentation.setDescription(getFirstTitle(representation.getDocList(), null));
+        
+        for (Param param : representation.getParamList()) {
+           param = resolveParameter(param);
+           if (param != null) {
+               RestParamProperty p = restMethod.addProperty(param.getName());
+               initParam(param, p);
+           }
+       }
     }
 
     private void initParam(Param param, RestParamProperty prop) {
